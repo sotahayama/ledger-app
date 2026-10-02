@@ -1,0 +1,31 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+// 元帳の思想:取引は追記のみ。誤りは削除・編集せず、
+// 逆仕訳(reversalOf で元の取引を参照する取消取引)を新規追加して相殺する。
+model Transaction {
+  id            Int             @id @default(autoincrement())
+  type          TransactionType
+  amount        Int // 常に正の値(円)。符号は type が持つ
+  description   String
+  balanceAfter  Int // この取引が反映された後の残高(整合性チェックの基準値)
+  reversalOf    Int? @unique
+  reversalOfTx  Transaction?    @relation("Reversal", fields: [reversalOf], references: [id])
+  reversedByTx  Transaction?    @relation("Reversal")
+  createdAt     DateTime        @default(now())
+}
