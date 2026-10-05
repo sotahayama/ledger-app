@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
 import { checkIntegrity } from "@/lib/ledger";
+import { respond } from "@/lib/api";
 
 export async function GET() {
-  const result = await checkIntegrity();
-  return NextResponse.json(result);
+  return respond(checkIntegrity);
 }

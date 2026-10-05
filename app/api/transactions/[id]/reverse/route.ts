@@ -1,18 +1,10 @@
-import { NextResponse } from "next/server";
-import { reverseTransaction, LedgerError } from "@/lib/ledger";
+import { reverseTransaction } from "@/lib/ledger";
+import { respond } from "@/lib/api";
 
 export async function POST(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  ctx: RouteContext<"/api/transactions/[id]/reverse">,
 ) {
-  const { id } = await params;
-  try {
-    const transaction = await reverseTransaction(Number(id));
-    return NextResponse.json({ transaction }, { status: 201 });
-  } catch (e) {
-    if (e instanceof LedgerError) {
-      return NextResponse.json({ error: e.message }, { status: 400 });
-    }
-    throw e;
-  }
+  const { id } = await ctx.params;
+  return respond(() => reverseTransaction(Number(id)), 201);
 }

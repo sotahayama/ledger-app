@@ -1,32 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createTransaction, listTransactions, LedgerError } from "@/lib/ledger";
+import { readBody, respond } from "@/lib/api";
 
 export async function GET() {
-  const transactions = await listTransactions();
-  return NextResponse.json({ transactions });
+  return respond(async () => ({ transactions: await listTransactions() }));
 }
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-
-  if (body.type !== "DEPOSIT" && body.type !== "WITHDRAWAL") {
-    return NextResponse.json(
-      { error: "typeはDEPOSITかWITHDRAWALを指定してください。" },
-      { status: 400 },
-    );
-  }
-
-  try {
+export async function POST(req: Request) {
+  return respond(async () => {
+    const body = await readBody(req);
+    if (body.type !== "DEPOSIT" && body.type !== "WITHDRAWAL") {
+      throw new LedgerError("typeはDEPOSITかWITHDRAWALを指定してください。");
+    }
     const transaction = await createTransaction({
+      accountId: Number(body.accountId),
       type: body.type,
       amount: Number(body.amount),
       description: String(body.description ?? ""),
     });
-    return NextResponse.json({ transaction }, { status: 201 });
-  } catch (e) {
-    if (e instanceof LedgerError) {
-      return NextResponse.json({ error: e.message }, { status: 400 });
-    }
-    throw e;
-  }
+    return { transaction };
+  }, 201);
 }

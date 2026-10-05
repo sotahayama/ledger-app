@@ -16,16 +16,40 @@ enum TransactionType {
   WITHDRAWAL
 }
 
+model Account {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+}
+
+// 振替は「出金側」と「入金側」の2本の取引(脚)を1つにまとめる見出し。
+// 2本は必ず同じDBトランザクションで作られ、片方だけが残ることはない。
+model Transfer {
+  id        Int           @id @default(autoincrement())
+  createdAt DateTime      @default(now())
+  entries   Transaction[]
+}
+
 // 元帳の思想:取引は追記のみ。誤りは削除・編集せず、
 // 逆仕訳(reversalOf で元の取引を参照する取消取引)を新規追加して相殺する。
 model Transaction {
-  id            Int             @id @default(autoincrement())
-  type          TransactionType
-  amount        Int // 常に正の値(円)。符号は type が持つ
-  description   String
-  balanceAfter  Int // この取引が反映された後の残高(整合性チェックの基準値)
-  reversalOf    Int? @unique
-  reversalOfTx  Transaction?    @relation("Reversal", fields: [reversalOf], references: [id])
-  reversedByTx  Transaction?    @relation("Reversal")
-  createdAt     DateTime        @default(now())
+  id           Int             @id @default(autoincrement())
+  accountId    Int
+  account      Account         @relation(fields: [accountId], references: [id])
+  // 口座内の連番。直前の取引の seq + 1 で採番し、(accountId, seq) を一意にすることで、
+  // 同じ残高を元に計算した取引が同時に2件書き込まれるのをDBが拒否する(楽観的排他制御)。
+  seq          Int
+  type         TransactionType
+  amount       Int // 常に正の値(円)。符号は type が持つ
+  description  String
+  balanceAfter Int // この取引が反映された後の口座残高(整合性チェックの基準値)
+  transferId   Int?
+  transfer     Transfer?       @relation(fields: [transferId], references: [id])
+  reversalOf   Int?            @unique
+  reversalOfTx Transaction?    @relation("Reversal", fields: [reversalOf], references: [id])
+  reversedByTx Transaction?    @relation("Reversal")
+  createdAt    DateTime        @default(now())
+
+  @@unique([accountId, seq])
 }

@@ -1,21 +1,16 @@
-import { checkIntegrity, listTransactions } from "@/lib/ledger";
+import { checkIntegrity, listAccounts, listTransactions } from "@/lib/ledger";
 import { Ledger } from "./ledger";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [transactions, integrity] = await Promise.all([
+  const [accounts, transactions, integrity] = await Promise.all([
+    listAccounts(),
     listTransactions(),
     checkIntegrity(),
   ]);
 
   return (
-    <Ledger
-      transactions={transactions.map((t) => ({
-        ...t,
-        createdAt: t.createdAt.toISOString(),
-      }))}
-      integrity={integrity}
-    />
+    <Ledger accounts={accounts} transactions={transactions} integrity={integrity} />
   );
 }
