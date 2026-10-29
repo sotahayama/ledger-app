@@ -47,3 +47,7 @@ next-env.d.ts
 
 # local Claude Code config
 /.claude/
+
+# Next.js が自動生成する AI ツール向けの指示ファイル(手元にだけ置く)
+/AGENTS.md
+/CLAUDE.md
